@@ -1,0 +1,8 @@
+[package]
+name = "z_mandelbrot"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+random = "0.14.0"
+raylib = "3.7.0"
