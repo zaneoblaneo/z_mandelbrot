@@ -4,5 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+image = "0.25.1"
 random = "0.14.0"
 raylib = "3.7.0"

@@ -2,13 +2,20 @@ use std::ops::{Add, AddAssign, Sub, SubAssign, Mul, MulAssign};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Complex {
-    pub r: f32,
-    pub i: f32,
+    pub r: f64,
+    pub i: f64,
 }
 
 impl Complex {
-    pub fn len(self) -> f32 {
-        ((self.r * self.r) + (self.i * self.i)).powf(0.5f32)
+    pub fn len(self) -> f64 {
+        ((self.r * self.r) + (self.i * self.i)).powf(0.5f64)
+    }
+
+    pub fn sin(self) -> Self {
+        Self {
+            r: f64::sin(self.r),
+            i: f64::sin(self.i),
+        }
     }
 }
 
@@ -59,3 +66,4 @@ impl MulAssign for Complex {
         *self = *self * c;
     }
 }
+
