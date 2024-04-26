@@ -2,7 +2,7 @@
 
 
 This project is a Mandelbrot Set visualization. It was inspired by <br>
-[Coding Train's Coding Challenge #21][https://thecodingtrain.com/challenges/21-mandelbrot-set-with-p5js]<br>
+[Coding Train's Coding Challenge #21](https://thecodingtrain.com/challenges/21-mandelbrot-set-with-p5js)<br>
 
 ## Quick Start
 ```console
