@@ -1,7 +1,8 @@
 #![allow(unused_assignments)]
 use raylib::prelude::*;
-use std::io::Cursor;
-use image::io::Reader as ImageReader;
+use std::fs::File;
+use std::io::Write;
+use std::path::PathBuf;
 
 pub mod complex;
 use complex::Complex;
@@ -10,7 +11,10 @@ extern crate std;
 const WIDTH: i32 = 400;
 const HEIGHT: i32 = 400;
 
-const OUT_FILE_PATH: &str = "mandelbrot_set_2560_1440.png";
+const RENDER_WIDTH: usize = 2560;
+const RENDER_HEIGHT: usize = 1440;
+
+const OUT_FILE_PATH: &str = "mandelbrot_set_2560_1440.ppm";
 
 fn map_f64(i: f64, min_i: f64, max_i: f64, min_o: f64, max_o: f64) -> f64 {
     (i - min_i) * (max_o - min_o) / (max_i - min_i) + min_o
@@ -37,9 +41,9 @@ fn compute_mandelbrot(width: i32,
                       max_y: f64,
                       max_iter: usize) -> Vec<Color> {
     let mut mandelbrot = Vec::with_capacity((width * height) as usize);
-    for y in 0..HEIGHT {
+    for y in 0..height {
         let mapped_y = map_f64(y as f64, 0f64, height as f64, min_y, max_y);
-        'a: for x in 0..WIDTH {
+        'a: for x in 0..width {
             let mapped_x = 
                 map_f64(x as f64, 0f64, width as f64, min_x, max_x);
             let complex_pos = Complex {
@@ -68,6 +72,22 @@ fn calc_scale(percent: f64, min: f64, max: f64) -> f64 {
     (max - min) * percent
 }
 
+fn write_mandelbrot_to_disk(mandelbrot: Vec<Color>, 
+                            path: PathBuf, 
+                            width: usize, 
+                            height: usize) {
+    let mut file: File = File::create(path).expect("Failed to create file.");
+    let header: String = format!("P6 {width} {height} 255\n");
+    let mut out_data: Vec<u8> = Vec::with_capacity(width * height * 3);
+    for pixel in mandelbrot {
+        out_data.push(pixel.r);
+        out_data.push(pixel.g);
+        out_data.push(pixel.b);
+    }
+    file.write(header.as_bytes()).expect("Failed to write to file.");
+    file.write(&out_data).expect("Failed to write to file.");
+}
+
 fn main() {
     let (mut rl, thread) = raylib::init()
         .size(WIDTH, HEIGHT)
@@ -82,7 +102,13 @@ fn main() {
     let mut last_frame_time: f32 = 0f32;
 
     let mut mandelbrot: Vec<Color> = 
-        compute_mandelbrot(WIDTH, HEIGHT, min_x, max_x, min_y, max_y, max_iter);
+        compute_mandelbrot(WIDTH, 
+                           HEIGHT, 
+                           min_x, 
+                           max_x, 
+                           min_y, 
+                           max_y, 
+                           max_iter);
 
     while !rl.window_should_close() {
         let frame_time = rl.get_frame_time();
@@ -92,25 +118,49 @@ fn main() {
                 min_x -= scale;
                 max_x -= scale;
                 mandelbrot = 
-                    compute_mandelbrot(WIDTH, HEIGHT, min_x, max_x, min_y, max_y, max_iter);
+                    compute_mandelbrot(WIDTH, 
+                                       HEIGHT, 
+                                       min_x, 
+                                       max_x, 
+                                       min_y, 
+                                       max_y, 
+                                       max_iter);
             } else if key == KeyboardKey::KEY_RIGHT {
                 let scale = calc_scale(0.1f64, min_x, max_x);
                 min_x += scale;
                 max_x += scale;
                 mandelbrot = 
-                    compute_mandelbrot(WIDTH, HEIGHT, min_x, max_x, min_y, max_y, max_iter);
+                    compute_mandelbrot(WIDTH, 
+                                       HEIGHT, 
+                                       min_x, 
+                                       max_x, 
+                                       min_y, 
+                                       max_y, 
+                                       max_iter);
             } else if key == KeyboardKey::KEY_DOWN {
                 let scale = calc_scale(0.1f64, min_y, max_y);
                 min_y += scale;
                 max_y += scale;
                 mandelbrot = 
-                    compute_mandelbrot(WIDTH, HEIGHT, min_x, max_x, min_y, max_y, max_iter);
+                    compute_mandelbrot(WIDTH, 
+                                       HEIGHT, 
+                                       min_x, 
+                                       max_x, 
+                                       min_y, 
+                                       max_y, 
+                                       max_iter);
             } else if key == KeyboardKey::KEY_UP {
                 let scale = calc_scale(0.1f64, min_y, max_y);
                 min_y -= scale;
                 max_y -= scale;
                 mandelbrot = 
-                    compute_mandelbrot(WIDTH, HEIGHT, min_x, max_x, min_y, max_y, max_iter);
+                    compute_mandelbrot(WIDTH, 
+                                       HEIGHT, 
+                                       min_x, 
+                                       max_x, 
+                                       min_y, 
+                                       max_y, 
+                                       max_iter);
             } else if key == KeyboardKey::KEY_KP_ADD {
                 let scale_x = calc_scale(0.1f64, min_x, max_x);
                 let scale_y = calc_scale(0.1f64, min_y, max_y);
@@ -119,7 +169,13 @@ fn main() {
                 min_y += scale_y;
                 max_y -= scale_y;
                 mandelbrot = 
-                    compute_mandelbrot(WIDTH, HEIGHT, min_x, max_x, min_y, max_y, max_iter);
+                    compute_mandelbrot(WIDTH, 
+                                       HEIGHT, 
+                                       min_x, 
+                                       max_x, 
+                                       min_y, 
+                                       max_y, 
+                                       max_iter);
             } else if key == KeyboardKey::KEY_KP_SUBTRACT {
                 let scale_x = calc_scale(0.1f64, min_x, max_x);
                 let scale_y = calc_scale(0.1f64, min_y, max_y);
@@ -128,18 +184,42 @@ fn main() {
                 min_y -= scale_y;
                 max_y += scale_y;
                 mandelbrot = 
-                    compute_mandelbrot(WIDTH, HEIGHT, min_x, max_x, min_y, max_y, max_iter);
+                    compute_mandelbrot(WIDTH, 
+                                       HEIGHT, 
+                                       min_x, 
+                                       max_x, 
+                                       min_y, 
+                                       max_y, 
+                                       max_iter);
             } else if key == KeyboardKey::KEY_F {
                 max_iter -= 200usize;
                 mandelbrot = 
-                    compute_mandelbrot(WIDTH, HEIGHT, min_x, max_x, min_y, max_y, max_iter);
+                    compute_mandelbrot(WIDTH, 
+                                       HEIGHT, 
+                                       min_x, 
+                                       max_x, 
+                                       min_y, 
+                                       max_y, 
+                                       max_iter);
             } else if key == KeyboardKey::KEY_S {
                 max_iter += 200usize;
                 mandelbrot = 
-                    compute_mandelbrot(WIDTH, HEIGHT, min_x, max_x, min_y, max_y, max_iter);
+                    compute_mandelbrot(WIDTH, 
+                                       HEIGHT, 
+                                       min_x, 
+                                       max_x, 
+                                       min_y, 
+                                       max_y, 
+                                       max_iter);
             } else if key == KeyboardKey::KEY_D {
                 mandelbrot = 
-                    compute_mandelbrot(WIDTH, HEIGHT, min_x, max_x, min_y, max_y, max_iter);
+                    compute_mandelbrot(WIDTH, 
+                                       HEIGHT, 
+                                       min_x, 
+                                       max_x, 
+                                       min_y, 
+                                       max_y, 
+                                       max_iter);
                 println!("bounds_x: {min_x} < x < {max_x}");
                 println!("bounds_y: {min_y} < y < {max_y}");
                 println!("max_iter: {max_iter}");
@@ -153,14 +233,34 @@ fn main() {
                 min_y = -1.12f64;
                 max_y = 1.12f64;
                 mandelbrot = 
-                    compute_mandelbrot(WIDTH, HEIGHT, min_x, max_x, min_y, max_y, max_iter);
+                    compute_mandelbrot(WIDTH, 
+                                       HEIGHT, 
+                                       min_x, 
+                                       max_x, 
+                                       min_y, 
+                                       max_y, 
+                                       max_iter);
             } else if key == KeyboardKey::KEY_R {
-                println!("Computing the mandelbrot for saving");
+                println!("Computing the mandelbrot for saving.");
+                println!("This might take a while depending on the speed of");
+                println!("your computer, the quality settings, and the size");
+                println!("of the output image.");
                 // render the mandelbrot at current settings 
-                mandelbrot = 
-                    compute_mandelbrot(2560, 1440, min_x, max_x, min_y, max_y, max_iter);
+                let mandelbrot = 
+                    compute_mandelbrot(RENDER_WIDTH as i32, 
+                                       RENDER_HEIGHT as i32, 
+                                       min_x, 
+                                       max_x, 
+                                       min_y, 
+                                       max_y, 
+                                       max_iter);
                 println!("mandelbrot computed.");
-                println!("Starting to write the mandelbrot to disk");
+                let out_path: PathBuf = PathBuf::from(OUT_FILE_PATH);
+                write_mandelbrot_to_disk(mandelbrot.clone(), 
+                                         out_path, 
+                                         RENDER_WIDTH, 
+                                         RENDER_HEIGHT);
+                println!("Wrote mandelbrot to disk.");
                 println!("Path: {OUT_FILE_PATH}");
 
             }
